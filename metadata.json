@@ -1,0 +1,6 @@
+{
+  "name": "Ask the Sources",
+  "description": "Source-grounded comparative wisdom engine retrieving authentic passages across world traditions to address life questions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
