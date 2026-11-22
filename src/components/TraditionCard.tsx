@@ -35,10 +35,10 @@ export const TraditionCard: React.FC<TraditionCardProps> = ({ answer }) => {
               className="text-base sm:text-lg font-bold font-cinzel tracking-wide leading-tight"
               style={{ color: answer.color.text }}
             >
-              {answer.traditionName}
+              {answer.passages[0]?.work || answer.traditionName}
             </h3>
             <span className="text-[11px] font-mono text-[#9aa0a6]">
-              {answer.group}
+              {answer.traditionName} · {answer.group}
             </span>
           </div>
         </div>
@@ -105,6 +105,10 @@ export const TraditionCard: React.FC<TraditionCardProps> = ({ answer }) => {
                       {passage.edition}
                     </span>
                   </div>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-wider">
+                  <span className="text-[#c99a4e]">AI reading below · not doctrine</span>
+                  <span className="text-amber-200/70">Editorial review pending</span>
                 </div>
 
                 {/* Optional Context Note */}

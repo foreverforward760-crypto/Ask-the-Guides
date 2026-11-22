@@ -1,263 +1,69 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AlertCircle, BookOpen, Check, Library, LockKeyhole, RefreshCw, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { Header } from './components/Header.tsx';
 import { CouncilPicker } from './components/CouncilPicker.tsx';
 import { QuestionBar } from './components/QuestionBar.tsx';
 import { TraditionCard } from './components/TraditionCard.tsx';
 import { CompareView } from './components/CompareView.tsx';
 import { PassageDrawer } from './components/PassageDrawer.tsx';
-import { AskResponse, TraditionGroupId } from './types.ts';
-import { Sparkles, ShieldCheck, Layers, BookOpen, AlertCircle, RefreshCw } from 'lucide-react';
-import { TRADITIONS } from './lib/sources.ts';
-import { retrievePassagesForTraditions } from './lib/retrieve.ts';
-import { generateLocalGroundedInterpretation, generateLocalComparison } from './lib/ai.ts';
+import { AskResponse } from './types.ts';
 
-const DEFAULT_COUNCIL = [
-  'new_testament',
-  'marcus_aurelius',
-  'dhammapada',
-  'tao_te_ching',
-  'bhagavad_gita',
-  'quran',
-];
+const DEFAULT_WORKS = ['new_testament', 'marcus_aurelius', 'dhammapada', 'tao_te_ching', 'bhagavad_gita', 'quran'];
+const CONSENT_KEY = 'ask-sources-consent-v1';
+
+function CrisisPanel({ response }: { response: AskResponse }) {
+  if (!response.crisis) return null;
+  return <section className={`rounded-2xl border p-5 ${response.crisis.level === 'high' ? 'border-red-400/50 bg-red-950/35' : 'border-amber-300/40 bg-amber-950/25'}`}>
+    <div className="flex items-start gap-3"><AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" /><div><h2 className="font-semibold text-[#f5ebd7]">Human support comes first</h2><p className="mt-1 text-sm leading-relaxed text-[#e6d9c2]">{response.crisis.message}</p><div className="mt-4 flex flex-wrap gap-2">{response.crisis.resources.map((resource) => <a className="rounded-xl bg-[#c99a4e] px-3 py-2 text-sm font-semibold text-[#17130d]" href={resource.href} target="_blank" rel="noreferrer" key={resource.href}>{resource.label}<span className="ml-2 font-normal opacity-75">{resource.detail}</span></a>)}</div></div></div>
+  </section>;
+}
 
 export default function App() {
-  const [selectedTraditionIds, setSelectedTraditionIds] = useState<string[]>(DEFAULT_COUNCIL);
-  const [question, setQuestion] = useState<string>("I'm struggling to forgive someone who betrayed me");
-  const [activeResponse, setActiveResponse] = useState<AskResponse | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [selectedIds, setSelectedIds] = useState(DEFAULT_WORKS);
+  const [question, setQuestion] = useState("I'm struggling to forgive someone who betrayed me");
+  const [response, setResponse] = useState<AskResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'panels' | 'compare'>('panels');
-  const [isLibraryOpen, setIsLibraryOpen] = useState<boolean>(false);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [consented, setConsented] = useState(() => localStorage.getItem(CONSENT_KEY) === 'agreed');
+  const [showConsent, setShowConsent] = useState(() => localStorage.getItem(CONSENT_KEY) !== 'agreed');
+  const sessionId = useMemo(() => { const existing = localStorage.getItem('ask-sources-session'); if (existing) return existing; const created = crypto.randomUUID(); localStorage.setItem('ask-sources-session', created); return created; }, []);
 
-  // Client-side fallback generator to ensure absolute reliability even during dev server cold start
-  const generateClientFallbackResponse = useCallback(
-    (q: string, traditionIds: string[]): AskResponse => {
-      const retrieval = retrievePassagesForTraditions(q, traditionIds, 2);
-      const councilPassages = traditionIds
-        .map((tid) => {
-          const tradition = TRADITIONS.find((t) => t.id === tid);
-          const passages = retrieval.passagesByTradition[tid] || [];
-          if (!tradition || passages.length === 0) return null;
-          return { tradition, passages };
-        })
-        .filter((item): item is NonNullable<typeof item> => item !== null);
+  const acceptConsent = () => { localStorage.setItem(CONSENT_KEY, 'agreed'); setConsented(true); setShowConsent(false); };
+  const revokeConsent = () => { localStorage.removeItem(CONSENT_KEY); setConsented(false); setShowConsent(true); setResponse(null); };
 
-      const answers = councilPassages.map(({ tradition, passages }) => {
-        const local = generateLocalGroundedInterpretation(q, tradition, passages);
-        return {
-          traditionId: tradition.id,
-          traditionName: tradition.name,
-          group: tradition.group as TraditionGroupId,
-          color: tradition.accentColor,
-          passages,
-          whatSourcesSay: local.whatSourcesSay,
-          howItApplies: local.howItApplies,
-        };
-      });
+  const ask = useCallback(async (text: string, ids = selectedIds) => {
+    if (!consented || !text.trim()) { setShowConsent(true); return; }
+    setIsLoading(true); setError(null); setQuestion(text);
+    try {
+      const result = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Ask-Session': sessionId }, body: JSON.stringify({ question: text.trim(), traditionIds: ids, region: navigator.language.split('-')[1] || '' }) });
+      const payload = await result.json();
+      if (!result.ok) throw new Error(payload.error || 'Unable to consult the sources.');
+      setResponse(payload);
+    } catch (caught) { setError(caught instanceof Error ? caught.message : 'Unable to consult the sources.'); }
+    finally { setIsLoading(false); }
+  }, [consented, selectedIds, sessionId]);
 
-      const comparison = generateLocalComparison(answers);
+  useEffect(() => { if (consented && !response) ask(question, DEFAULT_WORKS); }, [consented]);
+  const changeWorks = (ids: string[]) => { setSelectedIds(ids); if (consented && question.trim()) ask(question, ids); };
 
-      return {
-        question: q,
-        detectedThemes: retrieval.detectedThemes,
-        answers,
-        comparison,
-      };
-    },
-    []
-  );
-
-  const handleAsk = useCallback(
-    async (queryText: string, councilIds: string[] = selectedTraditionIds) => {
-      if (!queryText.trim()) return;
-
-      setIsLoading(true);
-      setError(null);
-      setQuestion(queryText);
-
-      try {
-        const res = await fetch('/api/ask', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            question: queryText,
-            traditionIds: councilIds,
-          }),
-        });
-
-        if (!res.ok) {
-          throw new Error(`Server responded with status ${res.status}`);
-        }
-
-        const data: AskResponse = await res.json();
-        setActiveResponse(data);
-      } catch (err: any) {
-        console.warn('API route call not responding, utilizing grounded source engine client fallback:', err);
-        // Fallback to grounded local synthesis
-        const fallbackData = generateClientFallbackResponse(queryText, councilIds);
-        setActiveResponse(fallbackData);
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [selectedTraditionIds, generateClientFallbackResponse]
-  );
-
-  // Initial consult on app mount
-  useEffect(() => {
-    handleAsk("I'm struggling to forgive someone who betrayed me", DEFAULT_COUNCIL);
-  }, [handleAsk]);
-
-  // When council changes, re-query with current question if present
-  const handleCouncilChange = (newIds: string[]) => {
-    setSelectedTraditionIds(newIds);
-    if (question.trim()) {
-      handleAsk(question, newIds);
-    }
-  };
-
-  return (
-    <div className="min-h-screen bg-[#0f1115] text-[#e8eaed] flex flex-col selection:bg-[#c99a4e]/30 selection:text-[#f3dfba]">
-      {/* Navigation Header */}
-      <Header
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        selectedCount={selectedTraditionIds.length}
-        onOpenLibrary={() => setIsLibraryOpen(true)}
-      />
-
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
-        {/* Core Philosophy Banner */}
-        <div className="bg-gradient-to-r from-[#181c25] via-[#14171f] to-[#181c25] border border-[#262c3b] rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-md">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-[#c99a4e]/10 text-[#c99a4e] border border-[#c99a4e]/20 shrink-0">
-              <Layers className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-cinzel text-sm font-bold text-[#f5ebd7]">
-                  The Source-Grounded Principle
-                </span>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-[#202533] text-[#8ab4f8] border border-[#2b3346]">
-                  3 Distinct Layers
-                </span>
-              </div>
-              <p className="text-xs text-[#9aa0a6] mt-0.5 leading-relaxed">
-                You always know where the text ends and the interpretation begins: <span className="text-[#f3dfba] font-serif-reader">1. The Passages Themselves</span> → <span className="text-[#8ab4f8]">2. What the Sources Say</span> → <span className="text-[#6ee7b7]">3. How It Applies</span>.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs text-[#80868b] font-mono shrink-0">
-            <ShieldCheck className="w-4 h-4 text-[#c99a4e]" />
-            <span>Never blended · Accredited translations</span>
-          </div>
-        </div>
-
-        {/* Question Search & Prompt Bar */}
-        <QuestionBar
-          onSubmit={(q) => handleAsk(q)}
-          isLoading={isLoading}
-          activeQuestion={question}
-        />
-
-        {/* Council Selection Picker */}
-        <CouncilPicker
-          selectedIds={selectedTraditionIds}
-          onChange={handleCouncilChange}
-        />
-
-        {/* Status Bar / Active Query & Detected Themes */}
-        {activeResponse && (
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 pb-1 border-b border-[#212633]">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-xs font-mono text-[#80868b]">Consulting on:</span>
-              <span className="text-sm font-semibold text-[#f5ebd7] font-sans">
-                "{activeResponse.question}"
-              </span>
-
-              {activeResponse.detectedThemes && activeResponse.detectedThemes.length > 0 && (
-                <div className="flex items-center gap-1.5 ml-2">
-                  <span className="text-[11px] text-[#70757a] font-mono">Themes:</span>
-                  {activeResponse.detectedThemes.map((th) => (
-                    <span
-                      key={th}
-                      className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#1b202c] text-[#8ab4f8] border border-[#2d374a]"
-                    >
-                      #{th}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="text-xs font-mono text-[#80868b] flex items-center gap-2">
-              <span>{activeResponse.answers.length} tradition answers</span>
-              <button
-                onClick={() => handleAsk(question)}
-                disabled={isLoading}
-                className="p-1 text-[#9aa0a6] hover:text-[#e8eaed] rounded transition-colors"
-                title="Re-consult the sources"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Error Notification if any */}
-        {error && (
-          <div className="p-4 bg-red-950/40 border border-red-800/60 rounded-xl text-red-200 text-xs flex items-center gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        {/* Response View: Panels vs Compare Mode */}
-        {activeResponse && (
-          <div className="mt-4">
-            {viewMode === 'panels' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                {activeResponse.answers.map((answer) => (
-                  <TraditionCard key={answer.traditionId} answer={answer} />
-                ))}
-              </div>
-            ) : (
-              <CompareView
-                comparison={activeResponse.comparison}
-                answers={activeResponse.answers}
-                question={activeResponse.question}
-              />
-            )}
-          </div>
-        )}
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-[#202530] bg-[#111317] py-6 mt-12 text-center text-xs text-[#70757a]">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="font-cinzel text-sm text-[#a0a5ab] font-semibold">
-              Ask the Sources
-            </span>
-            <span>—</span>
-            <span>Source-grounded comparative wisdom engine</span>
-          </div>
-
-          <div className="flex items-center gap-3 text-[11px] font-mono">
-            <span>Primary Corpus: 10 Core Traditions</span>
-            <span>·</span>
-            <span>45+ Tagged Passages</span>
-          </div>
-        </div>
-      </footer>
-
-      {/* Primary Sources Corpus Drawer */}
-      <PassageDrawer
-        isOpen={isLibraryOpen}
-        onClose={() => setIsLibraryOpen(false)}
-      />
-    </div>
-  );
+  return <div className="min-h-screen bg-[#0f1115] text-[#e8eaed] selection:bg-[#c99a4e]/30">
+    <Header viewMode={viewMode} onViewModeChange={setViewMode} selectedCount={selectedIds.length} onOpenLibrary={() => setLibraryOpen(true)} />
+    <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8 sm:py-8">
+      <section className="relative overflow-hidden rounded-[1.75rem] border border-[#343443] bg-[radial-gradient(circle_at_top_right,rgba(201,154,78,.16),transparent_42%),linear-gradient(135deg,#191a22,#12141a)] p-6 sm:p-8">
+        <div className="absolute -right-12 -top-16 h-48 w-48 rounded-full border border-[#c99a4e]/10" /><div className="relative max-w-3xl"><div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#c99a4e]/25 bg-[#c99a4e]/10 px-3 py-1.5 text-[11px] font-mono uppercase tracking-[.18em] text-[#e3bb78]"><BookOpen className="h-3.5 w-3.5" /> A reading room, not an oracle</div><h1 className="font-source-serif text-4xl leading-[.98] tracking-tight text-[#f5ebd7] sm:text-6xl">Bring a real question.<br /><span className="text-[#c99a4e]">Read what the sources actually say.</span></h1><p className="mt-5 max-w-2xl text-sm leading-7 text-[#b8b8be] sm:text-base">Ask the Sources places a difficult question beside selected ancient and classical works. The passage is primary; the AI reading is labeled, limited, and never presented as doctrine.</p></div>
+      </section>
+      <div className="flex flex-col gap-4 rounded-2xl border border-[#2b3040] bg-[#151820] p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#c99a4e]" /><div><p className="text-sm font-semibold text-[#f5ebd7]">Three layers, kept distinct</p><p className="mt-1 text-xs leading-relaxed text-[#969ba5]">Passage · AI reading · Possible application. The current prototype corpus is still editorial-review pending.</p></div></div><button onClick={() => setShowConsent(true)} className="inline-flex shrink-0 items-center gap-2 text-xs text-[#d8b47a] hover:text-[#f3dfba]"><LockKeyhole className="h-3.5 w-3.5" /> Data consent</button></div>
+      <QuestionBar onSubmit={(text) => ask(text)} isLoading={isLoading} activeQuestion={question} />
+      <CouncilPicker selectedIds={selectedIds} onChange={changeWorks} />
+      {response?.crisis && <CrisisPanel response={response} />}
+      {error && <div className="flex items-center gap-2 rounded-xl border border-red-900/60 bg-red-950/30 p-4 text-sm text-red-200"><AlertCircle className="h-4 w-4" />{error}</div>}
+      {response && !response.crisis && <><div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#262a34] pb-3"><div><span className="font-mono text-[11px] uppercase tracking-wider text-[#7e8490]">Consulting on</span><p className="mt-1 text-sm text-[#f5ebd7]">“{response.question}”</p></div><div className="flex items-center gap-3 text-xs text-[#7e8490]"><span>{response.quotaRemaining ?? '—'} asks left today</span><button title="Re-consult" onClick={() => ask(question)} className="rounded-lg p-1.5 hover:bg-[#202431] hover:text-white"><RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} /></button></div></div>{response.noClosePassage ? <div className="rounded-2xl border border-[#343443] bg-[#151820] p-8 text-center"><Sparkles className="mx-auto h-6 w-6 text-[#c99a4e]" /><h2 className="mt-3 font-source-serif text-2xl text-[#f5ebd7]">No close passage found</h2><p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-[#969ba5]">The selected works do not contain a passage close enough to this question. Nothing has been padded or invented.</p></div> : viewMode === 'panels' ? <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">{response.answers.map((answer) => <TraditionCard key={answer.traditionId} answer={answer} />)}</div> : <CompareView comparison={response.comparison} answers={response.answers} question={response.question} />}</>}
+      <section className="grid gap-4 border-t border-[#232733] pt-6 text-xs text-[#858b95] sm:grid-cols-3"><div><p className="font-mono uppercase tracking-wider text-[#c99a4e]">Method</p><p className="mt-2 leading-relaxed">Retrieval happens before synthesis. The server supplies the passages; the client only displays them.</p></div><div><p className="font-mono uppercase tracking-wider text-[#c99a4e]">Limits</p><p className="mt-2 leading-relaxed">Educational reading tool. Not therapy, medical, legal, or religious counsel.</p></div><div><p className="font-mono uppercase tracking-wider text-[#c99a4e]">Library</p><button onClick={() => setLibraryOpen(true)} className="mt-2 inline-flex items-center gap-2 text-[#d8b47a] hover:text-[#f3dfba]"><Library className="h-3.5 w-3.5" />Browse the corpus</button></div></section>
+    </main>
+    <footer className="mt-10 border-t border-[#202530] bg-[#111317] py-6 text-center text-xs text-[#70757a]"><span className="font-cinzel text-sm text-[#a0a5ab]">Ask the Sources</span><span className="mx-2">—</span><span>A source-grounded reading room</span></footer>
+    <PassageDrawer isOpen={libraryOpen} onClose={() => setLibraryOpen(false)} />
+    {showConsent && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"><div className="w-full max-w-lg rounded-3xl border border-[#45404a] bg-[#171922] p-6 shadow-2xl"><div className="flex items-start justify-between"><div><div className="mb-3 inline-flex rounded-full border border-[#c99a4e]/25 bg-[#c99a4e]/10 p-2 text-[#d8b47a]"><LockKeyhole className="h-5 w-5" /></div><h2 className="font-source-serif text-3xl text-[#f5ebd7]">Before you ask</h2></div><button onClick={() => setShowConsent(false)} className="rounded-lg p-2 text-[#8b9099] hover:bg-[#242735]" aria-label="Close"><X className="h-4 w-4" /></button></div><p className="mt-4 text-sm leading-7 text-[#c9c7c6]">Your question and the selected passages are sent to the configured AI provider so it can produce a short, source-grounded reading. The app does not store your question by default. The current prototype names the provider only after production configuration.</p><p className="mt-3 text-xs leading-6 text-[#8f949e]">This is an educational reading tool, not therapy, medical, legal, or religious counsel. Crisis support is always available without an AI response.</p><button onClick={acceptConsent} className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-[#c99a4e] px-4 py-3 text-sm font-semibold text-[#17130d] hover:bg-[#d8ab5f]"><Check className="h-4 w-4" />I agree and continue</button>{consented && <button onClick={revokeConsent} className="mt-3 w-full text-xs text-[#8f949e] hover:text-[#f3dfba]">Withdraw consent</button>}</div></div>}
+  </div>;
 }

@@ -1,15 +1,7 @@
 export type TraditionGroupId =
-  | 'Christianity'
-  | 'Judaism'
-  | 'Islam'
-  | 'Stoicism'
-  | 'Classical Philosophy'
-  | 'Buddhism'
-  | 'Hindu & Dharmic'
-  | 'East Asian'
-  | 'African Spirituality'
-  | 'Modern Philosophy'
-  | 'Other Paths';
+  | 'Christianity' | 'Judaism' | 'Islam' | 'Stoicism' | 'Classical Philosophy'
+  | 'Buddhism' | 'Hindu & Dharmic' | 'East Asian' | 'African Spirituality'
+  | 'Modern Philosophy' | 'Other Paths';
 
 export interface TraditionMetadata {
   id: string;
@@ -19,13 +11,7 @@ export interface TraditionMetadata {
   sourceWork: string;
   era: string;
   description: string;
-  accentColor: {
-    bg: string;
-    border: string;
-    text: string;
-    badge: string;
-    glow: string;
-  };
+  accentColor: { bg: string; border: string; text: string; badge: string; glow: string };
 }
 
 export interface Passage {
@@ -42,18 +28,14 @@ export interface Passage {
   themes: string[];
   keywords: string[];
   contextNote?: string;
+  provenanceStatus?: 'editorial-review-pending' | 'verified';
 }
 
 export interface TraditionAnswer {
   traditionId: string;
   traditionName: string;
   group: TraditionGroupId;
-  color: {
-    bg: string;
-    border: string;
-    text: string;
-    badge: string;
-  };
+  color: { bg: string; border: string; text: string; badge: string };
   passages: Passage[];
   whatSourcesSay: string;
   howItApplies: string;
@@ -63,11 +45,7 @@ export interface ComparisonInsight {
   convergence: string[];
   divergence: string[];
   keyTension: string;
-  summaryQuoteHighlight?: {
-    traditionName: string;
-    citation: string;
-    quote: string;
-  };
+  summaryQuoteHighlight?: { traditionName: string; citation: string; quote: string };
 }
 
 export interface AskResponse {
@@ -75,4 +53,7 @@ export interface AskResponse {
   detectedThemes: string[];
   answers: TraditionAnswer[];
   comparison?: ComparisonInsight;
+  crisis?: { level: 'elevated' | 'high'; message: string; resources: { label: string; detail: string; href: string }[] };
+  noClosePassage?: boolean;
+  quotaRemaining?: number;
 }
