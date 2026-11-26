@@ -20,6 +20,15 @@ const consentIssuance = new Map<string, { day: string; issued: number }>();
 const CONSENT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const CONSENT_DAILY_ISSUE_LIMIT = 20;
 
+function getCookie(req: express.Request, name: string): string | undefined {
+  const cookieHeader = req.headers.cookie || '';
+  for (const part of cookieHeader.split(';')) {
+    const [key, ...valueParts] = part.trim().split('=');
+    if (key === name) return decodeURIComponent(valueParts.join('='));
+  }
+  return undefined;
+}
+
 app.use(express.json({ limit: '32kb' }));
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -49,13 +58,26 @@ app.post('/api/consent', (req, res) => {
   for (const [token, value] of consentTokens) {
     if (value.expiresAt <= Date.now()) consentTokens.delete(token);
   }
+  res.cookie('ask_consent', consentToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: CONSENT_TTL_MS,
+    path: '/',
+  });
   res.setHeader('Cache-Control', 'no-store');
-  return res.json({ ok: true, version: 'mvp-consent-v2', consentToken, expiresAt });
+  return res.json({ ok: true, version: 'mvp-consent-v2', expiresAt });
 });
 
 app.post('/api/consent/revoke', (req, res) => {
-  const token = String(req.headers['x-ask-consent'] || '');
+  const token = getCookie(req, 'ask_consent');
   if (token) consentTokens.delete(token);
+  res.clearCookie('ask_consent', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+  });
   res.setHeader('Cache-Control', 'no-store');
   return res.json({ ok: true, revoked: Boolean(token) });
 });
@@ -71,7 +93,7 @@ app.post('/api/ask', async (req, res) => {
       return res.status(400).json({ error: 'Choose between 1 and 8 available works.' });
     }
 
-    const consentToken = String(req.headers['x-ask-consent'] || '');
+    const consentToken = getCookie(req, 'ask_consent') || '';
     const consent = consentTokens.get(consentToken);
     if (!consent || consent.expiresAt <= Date.now()) {
       if (consentToken) consentTokens.delete(consentToken);
