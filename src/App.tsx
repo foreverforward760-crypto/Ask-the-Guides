@@ -49,8 +49,7 @@ export default function App() {
     try {
       await fetch('/api/consent/revoke', { method: 'POST' });
     } catch {
-        // Local revocation still clears the token if the server is unavailable.
-      }
+      // Local revocation still clears the consent state if the server is unavailable.
     }
     localStorage.removeItem(CONSENT_KEY);
     setConsented(false);
