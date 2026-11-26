@@ -1,15 +1,24 @@
 # Status
 
-## Built
+## Implemented in the current prototype
 
-The repository now has a consent-first reading-room flow, guarded `/api/ask`, anonymous per-session quota, conservative crisis interception, explicit no-close-passage behavior, server-only synthesis, source-work result cards, and the required route manifest. The client no longer runs a synthesis fallback when the API is unavailable.
-
-The prototype corpus remains visibly marked as editorial-review pending. This is intentional: the current hand-entered passages and mixed editions have not yet passed the canonical-source, license, and worldwide-rights pipeline described in the build specification.
-
-## Verified in this environment
-
-`npm install`, `npm run build`, and `npm run lint` pass. Runtime checks returned HTTP 200 for `/api/health` and `/api/consent`; a normal ask returned two source-backed answers; a high-risk request returned only crisis support resources with no passages.
+- React/Vite reading interface with tradition selection, passage cards, comparison view, and passage library.
+- Local hand-entered corpus with editorial-review-pending labels.
+- Theme/synonym retrieval with whole-word scoring and a minimum match threshold.
+- Neutral no-provider fallback; no fabricated doctrinal summaries when Gemini is unavailable.
+- Gemini synthesis constrained to supplied excerpts, with instructions not to invent citations or metadata.
+- Server-issued consent token, server-side enforcement on `/api/ask`, token revocation, 30-day expiry, and per-IP daily quota.
+- Keyword-only crisis language screen with explicit limitations and support links.
+- Regression tests and CI workflow for TypeScript checks, tests, and production build.
 
 ## Not verified
 
-No physical iOS or Android device, app-store package, database, RevenueCat subscription, production provider account, canonical corpus import, external legal review, or store submission was tested. The current repository is a web MVP foundation rather than a submission-ready native app.
+- The exact text, citations, translations, edition metadata, context notes, and licensing status of the corpus.
+- Gemini model availability, provider-side data handling, or output accuracy under real user questions.
+- The completeness or effectiveness of crisis-language detection.
+- Production hosting, persistent user identity, database storage, subscriptions, or native mobile packaging.
+- Commercial rights to all passages and translations.
+
+## Current release status
+
+Web MVP foundation only. Not ready for commercial launch until corpus provenance and licensing are resolved and AI/safety behavior receives independent review.
