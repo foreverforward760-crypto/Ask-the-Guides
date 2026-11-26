@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { AlertCircle, BookOpen, Check, Library, LockKeyhole, RefreshCw, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { Header } from './components/Header.tsx';
 import { CouncilPicker } from './components/CouncilPicker.tsx';
@@ -84,7 +84,6 @@ export default function App() {
     finally { setIsLoading(false); }
   }, [consented, consentToken, selectedIds]);
 
-  useEffect(() => { if (consented && consentToken && !response) ask(question, DEFAULT_WORKS); }, [consented, consentToken]);
   const changeWorks = (ids: string[]) => { setSelectedIds(ids); if (consented && question.trim()) ask(question, ids); };
 
   return <div className="min-h-screen bg-[#0f1115] text-[#e8eaed] selection:bg-[#c99a4e]/30">
