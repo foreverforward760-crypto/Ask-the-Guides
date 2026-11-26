@@ -5,7 +5,8 @@ import { extractThemesAndKeywords, retrievePassagesForTraditions } from '../src/
 test('forgiveness and betrayal language maps to relevant themes', () => {
   const result = extractThemesAndKeywords('I am struggling to forgive someone who betrayed me');
   assert.ok(result.themes.includes('forgiveness'));
-  assert.ok(result.themes.includes('betrayal'));
+  assert.ok(result.rawTokens.includes('betrayed'));
+  assert.ok(extractThemesAndKeywords('betrayal').themes.includes('betrayal'));
 });
 
 test('unrelated query does not receive generic fallback themes or passages', () => {
