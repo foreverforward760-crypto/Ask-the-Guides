@@ -32,6 +32,9 @@ app.get('/api/traditions', (_req, res) => res.json({ traditions: TRADITIONS }));
 app.post('/api/consent', (req, res) => {
   const ip = req.ip || 'unknown';
   const today = new Date().toISOString().slice(0, 10);
+  for (const [key, value] of consentIssuance) {
+    if (value.day !== today) consentIssuance.delete(key);
+  }
   const current = consentIssuance.get(ip);
   const usage = current?.day === today ? current : { day: today, issued: 0 };
   if (usage.issued >= CONSENT_DAILY_ISSUE_LIMIT) {
