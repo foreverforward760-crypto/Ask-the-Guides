@@ -1,32 +1,28 @@
-# Ask the Sources — TODO
+# Remaining Work
 
-## Foundation and build
+## Blocking before public or commercial release
 
-- [ ] The repository installs cleanly with a compatible Vite/esbuild toolchain.
-- [ ] `npm run build` produces the Vite client bundle and bundled Express server.
-- [ ] `npm run lint` passes TypeScript checking.
-- [ ] The project exposes a synchronized `GET /manus-routes.json` route manifest.
+- [ ] Audit every passage against the exact primary source and edition.
+- [ ] Replace uncertain translation/edition metadata with verified citations.
+- [ ] Record provenance, source hashes, exact locators, and license/permission for each excerpt.
+- [ ] Remove or license any copyrighted text that cannot be reused commercially.
+- [ ] Obtain editorial review from qualified readers for each represented tradition.
+- [ ] Evaluate Gemini outputs for fabricated context, inaccurate summaries, and unsupported cross-tradition claims.
+- [ ] Review crisis-language screening with qualified safety specialists; do not market it as crisis detection.
+- [ ] Review privacy notice and Google Gemini API data terms for the intended deployment.
 
-## Source-grounded core
+## Engineering improvements
 
-- [ ] The app lets a person enter a real question and select named works rather than denomination tiles.
-- [ ] Source cards show the exact passage text returned by the server, with work, locator, translator, edition, and provenance status.
-- [ ] AI commentary is visibly separated from source text and is labeled as AI commentary, not doctrine or counsel.
-- [ ] The server rejects empty, oversized, malformed, and unrecognized source selections.
-- [ ] The server never accepts source text from the client and never lets the client synthesize a response.
-- [ ] A no-close-passage result is represented honestly rather than padded with unrelated passages.
+- [ ] Add a persistent consent store and user/session identity if multi-user deployment is required.
+- [ ] Add robust per-IP and per-account rate limiting for production.
+- [ ] Add tests for provider errors, invalid tokens, quota exhaustion, and no-close-passage responses.
+- [ ] Add source-by-source retrieval evaluation and a benchmark set.
+- [ ] Add monitoring and operational error reporting without logging private question text.
+- [ ] Confirm the configured Gemini model ID and API compatibility before deployment.
 
-## Safety and privacy
+## Not part of the current MVP
 
-- [ ] The first ask is blocked until the user explicitly consents to sending the question and selected passages to the named AI provider.
-- [ ] Consent version and timestamp are stored locally and can be withdrawn from the UI.
-- [ ] High-risk crisis language returns only supportive resources and does not render source passages.
-- [ ] Crisis resources are reachable without an AI response.
-- [ ] A lightweight anonymous session quota and request length limit are enforced server-side.
-- [ ] The UI states that this is an educational reading tool, not therapy, medical, legal, or religious counsel.
-
-## Transparency
-
-- [ ] The current prototype corpus is visibly marked as editorial review pending.
-- [ ] `DECISIONS.md`, `BLOCKED.md`, and `STATUS.md` record what is verified, provisional, or blocked.
-- [ ] The final report separates built code, automated checks, and owner-only tasks.
+- Native iOS/Android app packaging.
+- Subscription billing or RevenueCat.
+- A live external scholarly database or web search.
+- A verified crisis assessment or clinical support product.
