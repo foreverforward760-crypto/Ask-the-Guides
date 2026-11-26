@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'path';
+import { randomBytes } from 'node:crypto';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import { retrievePassagesForTraditions } from './src/lib/retrieve.ts';
@@ -14,6 +15,10 @@ const PORT = Number(process.env.PORT || 3000);
 const MAX_QUESTION_LENGTH = 1500;
 const DAILY_QUOTA = 12;
 const sessions = new Map<string, { day: string; asks: number }>();
+const consentTokens = new Map<string, { expiresAt: number }>();
+const consentIssuance = new Map<string, { day: string; issued: number }>();
+const CONSENT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const CONSENT_DAILY_ISSUE_LIMIT = 20;
 
 app.use(express.json({ limit: '32kb' }));
 app.use((req, res, next) => {
@@ -24,7 +29,33 @@ app.use((req, res, next) => {
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', corpusStatus: 'editorial-review-pending' }));
 app.get('/api/traditions', (_req, res) => res.json({ traditions: TRADITIONS }));
-app.post('/api/consent', (_req, res) => res.json({ ok: true, version: 'mvp-consent-v1' }));
+app.post('/api/consent', (req, res) => {
+  const ip = req.ip || 'unknown';
+  const today = new Date().toISOString().slice(0, 10);
+  const current = consentIssuance.get(ip);
+  const usage = current?.day === today ? current : { day: today, issued: 0 };
+  if (usage.issued >= CONSENT_DAILY_ISSUE_LIMIT) {
+    return res.status(429).json({ error: 'Consent session limit reached for today.' });
+  }
+  usage.issued += 1;
+  consentIssuance.set(ip, usage);
+
+  const consentToken = randomBytes(32).toString('hex');
+  const expiresAt = Date.now() + CONSENT_TTL_MS;
+  consentTokens.set(consentToken, { expiresAt });
+  for (const [token, value] of consentTokens) {
+    if (value.expiresAt <= Date.now()) consentTokens.delete(token);
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ ok: true, version: 'mvp-consent-v2', consentToken, expiresAt });
+});
+
+app.post('/api/consent/revoke', (req, res) => {
+  const token = String(req.headers['x-ask-consent'] || '');
+  if (token) consentTokens.delete(token);
+  res.setHeader('Cache-Control', 'no-store');
+  return res.json({ ok: true, revoked: Boolean(token) });
+});
 
 app.post('/api/ask', async (req, res) => {
   try {
@@ -37,8 +68,18 @@ app.post('/api/ask', async (req, res) => {
       return res.status(400).json({ error: 'Choose between 1 and 8 available works.' });
     }
 
-    const sessionId = String(req.headers['x-ask-session'] || req.ip || 'anonymous');
+    const consentToken = String(req.headers['x-ask-consent'] || '');
+    const consent = consentTokens.get(consentToken);
+    if (!consent || consent.expiresAt <= Date.now()) {
+      if (consentToken) consentTokens.delete(consentToken);
+      return res.status(403).json({ error: 'Consent is required before sending a question to the AI provider.' });
+    }
+
+    const sessionId = req.ip || 'unknown';
     const today = new Date().toISOString().slice(0, 10);
+    for (const [key, value] of sessions) {
+      if (value.day !== today) sessions.delete(key);
+    }
     const current = sessions.get(sessionId);
     const usage = current?.day === today ? current : { day: today, asks: 0 };
     if (usage.asks >= DAILY_QUOTA) return res.status(429).json({ error: 'Daily reading-room limit reached. Your Library remains available.' });
