@@ -145,7 +145,7 @@ export const PassageDrawer: React.FC<PassageDrawerProps> = ({
 
                   {passage.contextNote && (
                     <div className="text-[11px] text-[#9aa0a6] bg-[#12151c] p-2 rounded border border-[#202530] my-2 font-sans">
-                      <span className="text-[#c99a4e] font-mono mr-1">Context:</span>
+                      <span className="text-[#c99a4e] font-mono mr-1">Editorial note (unverified):</span>
                       {passage.contextNote}
                     </div>
                   )}
