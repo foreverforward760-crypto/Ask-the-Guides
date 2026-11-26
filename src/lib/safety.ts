@@ -17,6 +17,10 @@ const ELEVATED_PATTERNS = [
   /\b(?:hurt|harm) myself\b/i,
 ];
 
+/**
+ * Keyword-only safety screen. It is not a validated risk assessment and can
+ * produce false positives or miss indirect or unrecognized crisis language.
+ */
 export function classifyCrisis(question: string): CrisisLevel {
   if (HIGH_RISK_PATTERNS.some((pattern) => pattern.test(question))) return 'high';
   if (ELEVATED_PATTERNS.some((pattern) => pattern.test(question))) return 'elevated';
