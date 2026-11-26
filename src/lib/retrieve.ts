@@ -122,7 +122,7 @@ export interface RetrievalResult {
 
 export function extractThemesAndKeywords(query: string): { themes: string[]; rawTokens: string[] } {
   const normalized = query.toLowerCase().replace(/[^a-z0-9\s]/g, ' ');
-  const tokens = normalized.split(/\s+/).filter((t) => t.length > 1);
+  const tokens = normalized.split(/\s+/).filter((t) => t.length > 2 && !STOP_WORDS.has(t));
 
   const themeCounts = new Map<string, number>();
 
@@ -150,7 +150,7 @@ export function extractThemesAndKeywords(query: string): { themes: string[]; raw
     .sort((a, b) => b[1] - a[1])
     .map((entry) => entry[0]);
 
-  // Fallback to general themes if none detected
+  // Return only themes matched by the query; no generic fallback is inserted.
   const finalThemes = sortedThemes.slice(0, 4);
 
   return {
