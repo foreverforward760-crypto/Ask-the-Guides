@@ -10,7 +10,6 @@ import { AskResponse } from './types.ts';
 
 const DEFAULT_WORKS = ['new_testament', 'marcus_aurelius', 'dhammapada', 'tao_te_ching', 'bhagavad_gita', 'quran'];
 const CONSENT_KEY = 'ask-sources-consent-v2';
-const CONSENT_TOKEN_KEY = 'ask-sources-consent-token-v2';
 
 function CrisisPanel({ response }: { response: AskResponse }) {
   if (!response.crisis) return null;
@@ -27,21 +26,18 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'panels' | 'compare'>('panels');
   const [libraryOpen, setLibraryOpen] = useState(false);
-  const [consentToken, setConsentToken] = useState<string | null>(() => localStorage.getItem(CONSENT_TOKEN_KEY));
-  const [consented, setConsented] = useState(() => localStorage.getItem(CONSENT_KEY) === 'agreed' && Boolean(localStorage.getItem(CONSENT_TOKEN_KEY)));
-  const [showConsent, setShowConsent] = useState(() => !(localStorage.getItem(CONSENT_KEY) === 'agreed' && Boolean(localStorage.getItem(CONSENT_TOKEN_KEY))));
+  const [consented, setConsented] = useState(() => localStorage.getItem(CONSENT_KEY) === 'agreed');
+  const [showConsent, setShowConsent] = useState(() => localStorage.getItem(CONSENT_KEY) !== 'agreed');
 
   const acceptConsent = async () => {
     try {
       setError(null);
       const result = await fetch('/api/consent', { method: 'POST' });
       const payload = await result.json();
-      if (!result.ok || typeof payload.consentToken !== 'string') {
+      if (!result.ok || payload.ok !== true) {
         throw new Error(payload.error || 'Consent could not be recorded.');
       }
       localStorage.setItem(CONSENT_KEY, 'agreed');
-      localStorage.setItem(CONSENT_TOKEN_KEY, payload.consentToken);
-      setConsentToken(payload.consentToken);
       setConsented(true);
       setShowConsent(false);
     } catch (caught) {
@@ -50,31 +46,26 @@ export default function App() {
   };
 
   const revokeConsent = async () => {
-    if (consentToken) {
-      try {
-        await fetch('/api/consent/revoke', { method: 'POST', headers: { 'X-Ask-Consent': consentToken } });
-      } catch {
+    try {
+      await fetch('/api/consent/revoke', { method: 'POST' });
+    } catch {
         // Local revocation still clears the token if the server is unavailable.
       }
     }
     localStorage.removeItem(CONSENT_KEY);
-    localStorage.removeItem(CONSENT_TOKEN_KEY);
-    setConsentToken(null);
     setConsented(false);
     setShowConsent(true);
     setResponse(null);
   };
 
   const ask = useCallback(async (text: string, ids = selectedIds) => {
-    if (!consented || !consentToken || !text.trim()) { setShowConsent(true); return; }
+    if (!consented || !text.trim()) { setShowConsent(true); return; }
     setIsLoading(true); setError(null); setQuestion(text);
     try {
-      const result = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Ask-Consent': consentToken }, body: JSON.stringify({ question: text.trim(), traditionIds: ids, region: navigator.language.split('-')[1] || '' }) });
+      const result = await fetch('/api/ask', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: text.trim(), traditionIds: ids, region: navigator.language.split('-')[1] || '' }) });
       const payload = await result.json();
       if (result.status === 403) {
         localStorage.removeItem(CONSENT_KEY);
-        localStorage.removeItem(CONSENT_TOKEN_KEY);
-        setConsentToken(null);
         setConsented(false);
         setShowConsent(true);
       }
@@ -82,7 +73,7 @@ export default function App() {
       setResponse(payload);
     } catch (caught) { setError(caught instanceof Error ? caught.message : 'Unable to consult the sources.'); }
     finally { setIsLoading(false); }
-  }, [consented, consentToken, selectedIds]);
+  }, [consented, selectedIds]);
 
   const changeWorks = (ids: string[]) => { setSelectedIds(ids); if (consented && question.trim()) ask(question, ids); };
 
