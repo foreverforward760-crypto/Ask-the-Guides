@@ -93,14 +93,14 @@ export const TraditionCard: React.FC<TraditionCardProps> = ({ answer }) => {
                   "{passage.text}"
                 </blockquote>
 
-                {/* Translator and Edition Named Explicitly */}
+                {/* Translator and Edition Listed (Not Yet Verified) */}
                 <div className="mt-3 pt-2.5 border-t border-[#232835] flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#80868b] font-mono">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[#a0a5ab]">Trans:</span>
+                    <span className="text-[#a0a5ab]">Translator listed:</span>
                     <span className="text-[#c4c7c5]">{passage.translator}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[#a0a5ab]">Edition:</span>
+                    <span className="text-[#a0a5ab]">Edition listed:</span>
                     <span className="text-[#9aa0a6] italic truncate max-w-[200px]">
                       {passage.edition}
                     </span>
@@ -149,7 +149,7 @@ export const TraditionCard: React.FC<TraditionCardProps> = ({ answer }) => {
         <div className="bg-[#161a22] border border-[#272d3b] rounded-xl p-3.5 space-y-1.5">
           <div className="flex items-center gap-1.5 text-[11px] font-mono tracking-wider uppercase text-[#8ab4f8]">
             <BookOpen className="w-3.5 h-3.5" />
-            <span className="font-semibold">Layer 2 · What the Sources Say</span>
+            <span className="font-semibold">Layer 2 · AI Reading of the Supplied Excerpt</span>
           </div>
           <p className="text-xs sm:text-sm text-[#d2d6dc] leading-relaxed">
             {answer.whatSourcesSay}
@@ -162,7 +162,7 @@ export const TraditionCard: React.FC<TraditionCardProps> = ({ answer }) => {
         <div className="bg-[#181c25] border border-[#2d3444] rounded-xl p-3.5 space-y-1.5 mt-auto">
           <div className="flex items-center gap-1.5 text-[11px] font-mono tracking-wider uppercase text-[#6ee7b7]">
             <Compass className="w-3.5 h-3.5" />
-            <span className="font-semibold">Layer 3 · How It Applies</span>
+            <span className="font-semibold">Layer 3 · Possible Reflection</span>
           </div>
           <p className="text-xs sm:text-sm text-[#e8eaed] leading-relaxed font-sans">
             {answer.howItApplies}
