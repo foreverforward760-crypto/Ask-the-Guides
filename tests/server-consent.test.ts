@@ -32,14 +32,15 @@ test('server rejects an AI question without an issued consent token', async () =
 test('issued consent token permits a request and revocation blocks later requests', async () => {
   const consentResponse = await fetch(`${baseUrl}/api/consent`, { method: 'POST' });
   assert.equal(consentResponse.status, 200);
-  const consent = await consentResponse.json() as { consentToken: string };
-  assert.ok(consent.consentToken);
+  const setCookie = consentResponse.headers.get('set-cookie') || '';
+  const consentCookie = setCookie.split(';')[0];
+  assert.match(consentCookie, /^ask_consent=.+$/);
 
   const askResponse = await fetch(`${baseUrl}/api/ask`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Ask-Consent': consent.consentToken,
+      'Cookie': consentCookie,
     },
     body: JSON.stringify({ question: 'I am struggling to forgive someone who betrayed me', traditionIds: ['new_testament'] }),
   });
@@ -47,7 +48,7 @@ test('issued consent token permits a request and revocation blocks later request
 
   const revokeResponse = await fetch(`${baseUrl}/api/consent/revoke`, {
     method: 'POST',
-    headers: { 'X-Ask-Consent': consent.consentToken },
+    headers: { 'Cookie': consentCookie },
   });
   assert.equal(revokeResponse.status, 200);
 
