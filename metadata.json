@@ -1,6 +1,8 @@
 {
   "name": "Ask the Sources",
-  "description": "Source-grounded comparative wisdom engine retrieving authentic passages across world traditions to address life questions.",
+  "description": "Experimental comparative-reading web app that retrieves selected excerpts from a hand-entered, editorial-review-pending corpus and optionally uses Gemini to generate interpretations. Not an authoritative source database.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
