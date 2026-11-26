@@ -66,7 +66,7 @@ export const CompareView: React.FC<CompareViewProps> = ({
           </div>
           <div>
             <span className="text-[11px] font-mono uppercase tracking-wider text-amber-300 font-semibold block mb-1">
-              The Essential Crossroads & Philosophical Tension
+              Possible Tension in the Supplied Excerpts
             </span>
             <p className="text-sm sm:text-base text-[#e8eaed] leading-relaxed font-sans">
               {comparison.keyTension}
@@ -83,10 +83,10 @@ export const CompareView: React.FC<CompareViewProps> = ({
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
             <div>
               <h4 className="font-cinzel text-base font-bold text-emerald-300">
-                Where the Traditions Converge
+                Where the Supplied Excerpts May Converge
               </h4>
               <p className="text-xs text-[#758a7d]">
-                Universal psychological and ethical commonalities
+                Potential parallels in the supplied excerpts; not universal claims
               </p>
             </div>
           </div>
