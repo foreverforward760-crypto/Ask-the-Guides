@@ -10,7 +10,7 @@ import { classifyCrisis, crisisResources } from './src/lib/safety.ts';
 import { AskResponse, Passage, TraditionAnswer, TraditionMetadata } from './src/types.ts';
 
 dotenv.config();
-const app = express();
+export const app = express();
 const PORT = Number(process.env.PORT || 3000);
 const MAX_QUESTION_LENGTH = 1500;
 const DAILY_QUOTA = 12;
@@ -141,4 +141,6 @@ async function start() {
   }
   app.listen(PORT, '0.0.0.0', () => console.log(`Ask the Sources server listening on ${PORT}`));
 }
-start().catch((error) => { console.error(error); process.exit(1); });
+if (process.env.NODE_ENV !== 'test') {
+  start().catch((error) => { console.error(error); process.exit(1); });
+}
