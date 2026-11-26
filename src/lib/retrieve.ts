@@ -2,6 +2,9 @@ import { PASSAGES } from './sources.ts';
 import { Passage } from '../types.ts';
 
 // Synonym and semantic intent map translating conversational phrasing to classical themes
+const MIN_PASSAGE_SCORE = 8;
+const STOP_WORDS = new Set(['the', 'and', 'for', 'but', 'with', 'from', 'that', 'this', 'you', 'your', 'are', 'was', 'were', 'have', 'has', 'had', 'who', 'what', 'when', 'where', 'why', 'how', 'someone', 'something']);
+
 const SYNONYM_THEME_MAP: Record<string, string[]> = {
   // Betrayal & Trust
   'betray': ['betrayal', 'forgiveness', 'resentment'],
@@ -148,7 +151,7 @@ export function extractThemesAndKeywords(query: string): { themes: string[]; raw
     .map((entry) => entry[0]);
 
   // Fallback to general themes if none detected
-  const finalThemes = sortedThemes.length > 0 ? sortedThemes.slice(0, 4) : ['suffering', 'purpose', 'patience'];
+  const finalThemes = sortedThemes.slice(0, 4);
 
   return {
     themes: finalThemes,
@@ -171,24 +174,24 @@ export function scorePassage(passage: Passage, query: string, detectedThemes: st
     }
   }
 
-  // 2. Keyword overlap
-  for (const kw of passage.keywords) {
-    const kwLower = kw.toLowerCase();
-    for (const token of tokens) {
-      if (kwLower.includes(token) || token.includes(kwLower)) {
-        score += 8;
-      }
-    }
+  // 2. Keyword overlap: compare normalized whole words, not arbitrary substrings.
+  const passageKeywordTokens = new Set(
+    passage.keywords.flatMap((kw) => kw.toLowerCase().split(/[^a-z0-9]+/).filter(Boolean))
+  );
+  for (const token of tokens) {
+    if (passageKeywordTokens.has(token)) score += 8;
   }
 
-  // 3. Exact query token match in primary text
+  // 3. Whole-word matches in excerpt and metadata.
+  const textTokens = new Set(lowerText.split(/[^a-z0-9]+/).filter(Boolean));
+  const citationTokens = new Set(lowerCitation.split(/[^a-z0-9]+/).filter(Boolean));
+  const authorTokens = new Set(lowerAuthor.split(/[^a-z0-9]+/).filter(Boolean));
+  const workTokens = new Set(lowerWork.split(/[^a-z0-9]+/).filter(Boolean));
   for (const token of tokens) {
-    if (token.length > 3) {
-      if (lowerText.includes(token)) score += 6;
-      if (lowerCitation.includes(token)) score += 5;
-      if (lowerAuthor.includes(token)) score += 4;
-      if (lowerWork.includes(token)) score += 3;
-    }
+    if (textTokens.has(token)) score += 6;
+    if (citationTokens.has(token)) score += 5;
+    if (authorTokens.has(token)) score += 4;
+    if (workTokens.has(token)) score += 3;
   }
 
   return score;
@@ -214,8 +217,8 @@ export function retrievePassagesForTraditions(
 
     scored.sort((a, b) => b.score - a.score);
 
-    // Pick top candidates
-    const chosen = scored.slice(0, maxPerTradition).map((s) => s.passage);
+    // Return only passages with a minimum lexical/theme match. Never pad a weak match.
+    const chosen = scored.filter((s) => s.score >= MIN_PASSAGE_SCORE).slice(0, maxPerTradition).map((s) => s.passage);
     passagesByTradition[tradId] = chosen;
   }
 
