@@ -7,7 +7,7 @@
 - Theme/synonym retrieval with whole-word scoring and a minimum match threshold.
 - Neutral no-provider fallback; no fabricated doctrinal summaries when Gemini is unavailable.
 - Gemini synthesis constrained to supplied excerpts, with instructions not to invent citations or metadata.
-- Server-issued consent token, server-side enforcement on `/api/ask`, token revocation, 30-day expiry, and per-IP daily quota.
+- Server-issued HttpOnly consent cookie, server-side enforcement on `/api/ask`, revocation, 30-day expiry, and per-IP daily quota.
 - Keyword-only crisis language screen with explicit limitations and support links.
 - Regression tests and CI workflow for TypeScript checks, tests, and production build.
 
