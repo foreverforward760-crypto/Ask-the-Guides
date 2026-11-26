@@ -84,6 +84,7 @@ app.post('/api/consent/revoke', (req, res) => {
 });
 
 app.post('/api/ask', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
   try {
     const question = typeof req.body?.question === 'string' ? req.body.question.trim() : '';
     const ids: string[] = Array.isArray(req.body?.traditionIds) ? req.body.traditionIds.filter((id: unknown): id is string => typeof id === 'string') : [];
