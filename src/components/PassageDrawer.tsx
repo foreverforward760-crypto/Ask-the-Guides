@@ -56,10 +56,10 @@ export const PassageDrawer: React.FC<PassageDrawerProps> = ({
             <BookOpen className="w-5 h-5 text-[#c99a4e]" />
             <div>
               <h3 className="font-cinzel text-lg font-bold text-[#f5ebd7]">
-                The Sources Corpus & Primary Library
+                Prototype Passage Library
               </h3>
               <p className="text-xs text-[#9aa0a6]">
-                {PASSAGES.length} authentic source passages across world traditions with accredited translators and editions
+                {PASSAGES.length} entered excerpts; text, citations, translations, editions, and reuse rights require editorial verification
               </p>
             </div>
           </div>
@@ -153,8 +153,8 @@ export const PassageDrawer: React.FC<PassageDrawerProps> = ({
 
                 <div className="mt-3 pt-2.5 border-t border-[#202530] space-y-2">
                   <div className="flex flex-wrap items-center justify-between text-[10px] text-[#80868b] font-mono gap-1">
-                    <span>Trans: {passage.translator}</span>
-                    <span className="italic">{passage.edition}</span>
+                    <span>Translator listed: {passage.translator}</span>
+                    <span className="italic">Edition listed: {passage.edition}</span>
                   </div>
 
                   <div className="flex items-center gap-1.5 flex-wrap">
