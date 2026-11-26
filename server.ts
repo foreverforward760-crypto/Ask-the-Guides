@@ -1,4 +1,5 @@
 import express from 'express';
+import type { Request } from 'express';
 import path from 'path';
 import { randomBytes } from 'node:crypto';
 import dotenv from 'dotenv';
@@ -20,7 +21,7 @@ const consentIssuance = new Map<string, { day: string; issued: number }>();
 const CONSENT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const CONSENT_DAILY_ISSUE_LIMIT = 20;
 
-function getCookie(req: express.Request, name: string): string | undefined {
+function getCookie(req: Request, name: string): string | undefined {
   const cookieHeader = req.headers.cookie || '';
   for (const part of cookieHeader.split(';')) {
     const [key, ...valueParts] = part.trim().split('=');
