@@ -20,7 +20,7 @@ after(async () => {
   });
 });
 
-test('server rejects an AI question without an issued consent token', async () => {
+test('server rejects an AI question without a consent cookie', async () => {
   const response = await fetch(`${baseUrl}/api/ask`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -29,7 +29,7 @@ test('server rejects an AI question without an issued consent token', async () =
   assert.equal(response.status, 403);
 });
 
-test('issued consent token permits a request and revocation blocks later requests', async () => {
+test('server-issued HttpOnly consent cookie permits a request and revocation blocks later requests', async () => {
   const consentResponse = await fetch(`${baseUrl}/api/consent`, { method: 'POST' });
   assert.equal(consentResponse.status, 200);
   const setCookie = consentResponse.headers.get('set-cookie') || '';
@@ -56,7 +56,7 @@ test('issued consent token permits a request and revocation blocks later request
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-Ask-Consent': consent.consentToken,
+      'Cookie': consentCookie,
     },
     body: JSON.stringify({ question: 'How do sources discuss forgiveness?', traditionIds: ['new_testament'] }),
   });
