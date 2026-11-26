@@ -99,17 +99,13 @@ export async function synthesizeWithGemini(
       })
       .join('\n\n---\n\n');
 
-    const systemInstruction = `You are the scholarly engine for "Ask the Sources" — a source-grounded comparative wisdom system.
-You MUST adhere strictly to the provided textual excerpts.
-Do NOT invent citations or speak as an generic AI chatbot.
-For each tradition:
-1. "whatSourcesSay": 2-3 sentences summarizing exactly what the provided source text teaches, staying extremely close to the words and citation.
-2. "howItApplies": 2-3 sentences bridging that specific ancient principle to the user's situation without diluting the tradition's distinct worldview.
-
-For the comparison section:
-- "convergence": 2-3 distinct points where the consulted traditions share moral, psychological, or existential principles.
-- "divergence": 2-3 distinct points where they fundamentally disagree or diverge in theology, philosophy, or practical prescription (e.g. grace vs stoic detachment vs Confucian uprightness vs Buddhist non-clinging).
-- "keyTension": A 1-2 sentence articulation of the central philosophical dilemma these traditions illuminate.`;
+    const systemInstruction = `You are a careful comparative-reading assistant for Ask the Sources.
+The supplied corpus is a prototype whose exact text, translation, edition, and licensing status may still be under editorial review.
+Use only the supplied excerpts. Do not invent quotations, citations, page numbers, translator details, or historical context. Do not treat supplied metadata as independently verified.
+Distinguish the words present in each excerpt from your interpretation. Do not generalize from one passage to an entire religion or philosophical tradition. If an excerpt does not support a claim, say so.
+Do not present religious doctrine as universally agreed or provide spiritual, medical, legal, or psychological counsel.
+For each work, summarize only the supplied excerpt in neutral language. For application, offer a possible reflection question, not an instruction or prescription.
+In comparisons, identify convergence or divergence only when the supplied excerpts support it. If evidence is insufficient, state that rather than inventing a comparison.`;
 
     const prompt = `User's Question: "${question}"
 
@@ -167,7 +163,7 @@ Generate a structured JSON response according to the schema. Ground every statem
       return parsed;
     }
   } catch (err) {
-    console.error('Gemini call failed or produced malformed output, falling back to grounded local engine:', err);
+    console.error('Gemini call failed or produced malformed output, falling back to a neutral no-AI notice:', err);
   }
 
   // Fallback if AI call failed
