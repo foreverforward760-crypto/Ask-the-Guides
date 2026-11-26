@@ -1,6 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { Passage, TraditionAnswer, ComparisonInsight, TraditionMetadata } from '../types.ts';
-import { TRADITIONS } from './sources.ts';
 
 // Server-side AI synthesis. The no-provider fallback intentionally avoids invented doctrinal summaries.
 // No-AI fallback: do not invent doctrinal summaries or applications when no provider is configured.
