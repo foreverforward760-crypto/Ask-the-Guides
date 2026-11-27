@@ -31,9 +31,9 @@ Ask the Sources is an experimental reading tool intended to let a user ask a que
 
 Before a question is sent to Gemini, the user must accept the consent notice. The server issues a random consent token, checks it on every `/api/ask` request, and supports revocation. The consent token is held in process memory on the server and delivered to the browser only as an HttpOnly, SameSite cookie; client JavaScript cannot read it. A server restart invalidates outstanding consent cookies.
 
-The server does not store question text in an application database. The question and selected passages are sent to Google Gemini when the provider is configured. Provider-side retention and training treatment are governed by Google's current API terms; review those terms before sending sensitive information.
+The server does not store question text in an application database. Browser local storage records only whether the consent screen was accepted; question text and AI responses are not persisted there by this application. The question and selected passages are sent to Google Gemini when the provider is configured. Provider-side retention and training treatment are governed by Google's current API terms; review those terms before sending sensitive information.
 
-The daily quota is per IP address, not a per-user identity system. This prototype has no user accounts, no persistent consent database, and no multi-user account management.
+The daily quota and consent records are held in process memory and are reset when the server restarts. The daily quota is per IP address, not a per-user identity system. This prototype has no user accounts, no persistent consent database, and no multi-user account management.
 
 ## Corpus and commercial rights — blocking issue
 
